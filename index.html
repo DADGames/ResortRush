@@ -3,175 +3,292 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Resort Rush: Tropical Merge</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
+    <title>Resort Tycoon | CrazyGames</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@700&family=Nunito:wght@700&display=swap" rel="stylesheet">
+    
     <style>
-        body { margin: 0; background: #1a1a1a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
-        #game-container { box-shadow: 0 0 50px rgba(0,0,0,0.8); border-radius: 15px; overflow: hidden; }
+        :root { 
+            --gold: #FFD700; 
+            --bright-green: #2ECC71; 
+            --gardenscapes-orange: #FF8C00;
+            --font-main: 'Fredoka', sans-serif;
+            --font-text: 'Nunito', sans-serif;
+        }
+
+        body, html { 
+            margin: 0; padding: 0; 
+            font-family: var(--font-text); 
+            background: #1a1a1a; color: white; 
+            height: 100%; width: 100%; overflow: hidden; 
+        }
+
+        .screen { 
+            display: none; height: 100vh; width: 100vw; 
+            flex-direction: column; justify-content: center; 
+            align-items: center; position: absolute; 
+            background-size: cover; background-position: center;
+            background-repeat: no-repeat;
+        }
+        
+        .active { display: flex; }
+
+        #preloader, #splash { background-color: #2c3e50; background-image: url('assets/logo.png'); }
+        #letter-screen { background-color: #34495e; background-image: url('assets/reception.png'); }
+        #map-screen { background-color: #27ae60; background-image: url('assets/map.png'); }
+
+        .overlay-dark {
+            position: absolute; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.4); z-index: 1;
+        }
+        .paper { 
+            background: #fdf5e6; color: #333; padding: 25px; border-radius: 25px; 
+            width: 85%; max-width: 380px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); 
+            border: 4px solid #e0d5b8; position: relative; z-index: 2; text-align: center;
+        }
+
+        h2 { 
+            font-family: var(--font-main); 
+            font-size: 28px;
+            color: var(--gardenscapes-orange);
+            text-shadow: 1px 1px 0px #fff;
+            margin-top: 0;
+        }
+
+        input, select { 
+            width: 100%; margin: 10px 0; padding: 14px; 
+            border-radius: 12px; border: 2px solid #ddd; 
+            font-size: 16px; font-family: var(--font-text);
+            box-sizing: border-box; 
+        }
+
+        /* Убираем стрелки выбора в инпутах */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        .btn-action { 
+            font-family: var(--font-main);
+            background: var(--bright-green); color: white; 
+            border: none; padding: 18px; border-radius: 50px; 
+            font-size: 1.6rem; cursor: pointer; 
+            box-shadow: 0 6px 0 #27ae60; width: 100%; 
+            margin-top: 10px;
+        }
+        .btn-action:disabled { background: #bdc3c7; box-shadow: 0 6px 0 #95a5a6; }
+
+        .map-icon {
+            position: absolute; width: 80px; height: 80px;
+            background-size: cover; z-index: 500;
+            border-radius: 50%;
+        }
+
+        .icon-lock { 
+            background-color: rgba(0,0,0,0.5);
+            background-image: url('assets/ui_spritesheet.png');
+            background-position: -896px -640px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .icon-lock::after { content: '🔒'; font-size: 30px; }
+
+        .icon-garden-start { 
+            background-color: var(--gold);
+            background-image: url('assets/ui_spritesheet.png');
+            background-position: 0px 0px; 
+            z-index: 600;
+            cursor: pointer;
+            display: none; 
+            border: 4px solid white;
+            box-shadow: 0 0 20px var(--gold);
+        }
+
+        .blink { animation: blinkAnim 1.2s infinite; }
+        @keyframes blinkAnim {
+            0% { filter: brightness(1); transform: scale(1); }
+            50% { filter: brightness(1.3); transform: scale(1.1); }
+            100% { filter: brightness(1); transform: scale(1); }
+        }
+
+        #finger-pointer {
+            position: absolute;
+            width: 60px; height: 60px;
+            background-image: url('assets/ui_spritesheet.png');
+            background-position: -384px -896px;
+            z-index: 1100;
+            display: none;
+            pointer-events: none;
+            animation: fingerClick 0.8s infinite;
+        }
+        #finger-pointer::before { content: '👆'; font-size: 50px; }
+
+        @keyframes fingerClick {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(15px); }
+            100% { transform: translateY(0); }
+        }
+
+        .pos-court { top: 15%; left: 20%; }
+        .pos-dog { top: 10%; left: 75%; }
+        .pos-houseL { top: 40%; left: 15%; }
+        .pos-houseR { top: 35%; left: 80%; }
+        .pos-garden { top: 55%; left: 45%; } 
+
+        .parrot-talk-wrap {
+            position: absolute; bottom: 20px; left: 50%;
+            transform: translateX(-50%); width: 90%; max-width: 600px;
+            display: none; align-items: flex-end; z-index: 1000;
+        }
+
+        .dialog-frame {
+            flex: 1; min-height: 120px;
+            background: #fff; border: 4px solid var(--gardenscapes-orange);
+            border-radius: 20px; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; padding: 20px; 
+            color: #333; font-family: var(--font-main); font-size: 20px;
+            text-align: center; position: relative;
+        }
+
+        .btn-next-dialog {
+            margin-top: 10px; background: var(--bright-green);
+            color: white; border: none; padding: 5px 20px;
+            border-radius: 15px; font-family: var(--font-main);
+            font-size: 16px; cursor: pointer; box-shadow: 0 3px 0 #27ae60;
+        }
+
+        .parrot-img {
+            width: 150px; height: 150px;
+            background: #f1c40f; border-radius: 50%;
+            margin-left: -30px; z-index: 1001;
+            border: 4px solid white;
+        }
+        .parrot-img::after { content: '🦜'; font-size: 80px; display: block; text-align: center; line-height: 140px; }
+
+        .bottom-phrases {
+            position: absolute; bottom: 47%; /* Смещено на 3% ниже от центральной линии (было 50%) */
+            font-family: var(--font-main); font-size: 1.2rem;
+            text-shadow: 2px 2px 0px #000;
+            background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 50px;
+        }
     </style>
 </head>
 <body>
-<div id="game-container"></div>
-<script>
 
-let State = JSON.parse(localStorage.getItem('resort_rush_pro')) || {
-    playerName: "", country: null, coins: 200, unlocked: 0, level: 0, lang: 'en'
-};
-const save = () => localStorage.setItem('resort_rush_pro', JSON.stringify(State));
+    <audio id="bgMusic" loop preload="auto">
+        <source src="music/background_music.mp3" type="audio/mpeg">
+    </audio>
 
-// --- ГЛАВНЫЙ КЛАСС ЗАГРУЗКИ ---
-class Boot extends Phaser.Scene {
-    constructor() { super('Boot'); }
-    preload() {
-        this.load.json('langData', 'lang.json');
-        this.load.image('map_bg', 'assets/map_bg.png');
-        this.load.image('level_bg', 'assets/level_bg.png');
-        this.load.image('ui_panel', 'assets/ui_panel.png');
-        this.load.image('btn_green', 'assets/btn_green.png');
-        this.load.image('ara_news', 'assets/ara_news.png');
-        this.load.image('mark', 'assets/mark.png');
-        this.load.image('lila', 'assets/lila.png');
-        this.load.spritesheet('items0', 'assets/spritesheet_reception.png', { frameWidth: 256, frameHeight: 256 });
-        this.load.spritesheet('items1', 'assets/spritesheet_room.png', { frameWidth: 256, frameHeight: 256 });
-        this.load.spritesheet('items2', 'assets/spritesheet_bar.png', { frameWidth: 256, frameHeight: 256 });
-        this.load.spritesheet('icons', 'assets/country_icons.png', { frameWidth: 256, frameHeight: 256 });
-    }
-    create() {
-        const fullLang = this.cache.json.get('langData');
-        const userL = navigator.language.substring(0, 2);
-        this.game.config.t = fullLang[userL] || fullLang['en'];
-        
-        if (!State.playerName) this.scene.start('Login');
-        else if (!State.country) this.scene.start('Choice');
-        else this.scene.start('News');
-    }
-}
+    <div id="preloader" class="screen active"></div>
+    <div id="splash" class="screen"><div class="bottom-phrases" id="random-tip">ЗАГРУЗКА...</div></div>
 
-// --- СЦЕНА ЛОГИНА (ВВОД ИМЕНИ) ---
-class Login extends Phaser.Scene {
-    constructor() { super('Login'); }
-    create() {
-        this.add.image(180, 320, 'level_bg').setAlpha(0.6);
-        this.add.image(180, 320, 'ui_panel').setScale(0.8);
-        const t = this.game.config.t;
-        this.add.text(180, 220, t.login_title, { color: '#442', fontSize: '24px', fontWeight: 'bold' }).setOrigin(0.5);
+    <div id="letter-screen" class="screen">
+        <div class="overlay-dark"></div>
+        <div class="paper">
+            <h2>РЕГИСТРАЦИЯ</h2>
+            <input type="text" id="pName" placeholder="Твое Имя" oninput="validate()" onpaste="return false;">
+            <input type="text" id="rName" placeholder="Название Острова" oninput="validate()" onpaste="return false;">
+            <select id="userCountry" onchange="validate()">
+                <option value="">Страна (для рейтинга)</option>
+            </select>
+            <button id="start-btn" class="btn-action" disabled onclick="startJourney()">В ПУТЬ!</button>
+        </div>
+    </div>
+
+    <div id="map-screen" class="screen">
+        <div class="map-icon icon-lock pos-court"></div>
+        <div class="map-icon icon-lock pos-dog"></div>
+        <div class="map-icon icon-lock pos-houseL"></div>
+        <div class="map-icon icon-lock pos-houseR"></div>
         
-        let btn = this.add.image(180, 350, 'btn_green').setInteractive().setScale(1.2);
-        this.add.text(180, 350, t.btn_login, { color: '#fff' }).setOrigin(0.5);
-        
-        btn.on('pointerdown', () => {
-            let name = prompt(t.btn_login, "Player1");
-            if(name) { State.playerName = name; save(); this.scene.start('Choice'); }
+        <div id="garden-entry" class="map-icon icon-garden-start pos-garden" onclick="goToGame()"></div>
+        <div id="finger-pointer" class="pos-garden" style="margin-top: -50px; margin-left: 20px;"></div>
+
+        <div class="parrot-talk-wrap" id="parrot-ui">
+            <div class="dialog-frame">
+                <span id="parrot-phrase">Привет, Капитан! Я Ара, твой помощник!</span>
+                <button class="btn-next-dialog" onclick="nextDialogue()">ДАЛЕЕ</button>
+            </div>
+            <div class="parrot-img"></div>
+        </div>
+    </div>
+
+    <script>
+        const countryList = [
+            "Австралия", "Австрия", "Азербайджан", "Албания", "Алжир", "Ангола", "Андорра", "Антигуа и Барбуда", "Аргентина", "Армения", "Афганистан", "Багамы", "Бангладеш", "Барбадос", "Бахрейн", "Белиз", "Бельгия", "Бенин", "Беларусь", "Болгария", "Боливия", "Босния и Герцеговина", "Ботсвана", "Бразилия", "Бруней", "Буркина-Фасо", "Бурунди", "Бутан", "Вануату", "Великобритания", "Венгрия", "Венесуэла", "Вьетнам", "Габон", "Гаити", "Гайана", "Гамбия", "Гана", "Гватемала", "Гвинея", "Гвинея-Бисау", "Германия", "Гондурас", "Гренада", "Греция", "Грузия", "Дания", "Джибути", "Доминика", "Доминиканская Республика", "Египет", "Замбия", "Зимбабве", "Израиль", "Индия", "Индонезия", "Иордания", "Ирак", "Иран", "Ирландия", "Исландия", "Испания", "Италия", "Йемен", "Кабо-Верде", "Казахстан", "Камбоджа", "Камерун", "Канада", "Катар", "Кения", "Кипр", "Кыргызстан", "Кирибати", "Китай", "Колумбия", "Коморы", "Конго", "Коста-Рика", "Кот-д'Ивуар", "Куба", "Кувейт", "Лаос", "Латвия", "Лесото", "Либерия", "Ливан", "Ливия", "Литва", "Лихтенштейн", "Люксембург", "Маврикий", "Мавритания", "Мадагаскар", "Малави", "Малайзия", "Мали", "Мальдивы", "Мальта", "Марокко", "Маршалловы Острова", "Мексика", "Микронезия", "Мозамбик", "Молдова", "Монако", "Монголия", "Мьянма", "Намибия", "Науру", "Непал", "Нигер", "Нигерия", "Нидерланды", "Никарагуа", "Новая Зеландия", "Норвегия", "ОАЭ", "Оман", "Пакистан", "Палау", "Панама", "Папуа — Новая Гвинея", "Парагвай", "Перу", "Польша", "Португалия", "Россия", "Руанда", "Румыния", "Сальвадор", "Самоа", "Сан-Марино", "Сан-Томе и Принсипи", "Саудовская Аравия", "Северная Македония", "Сейшелы", "Сенегал", "Сент-Винсент и Гренадины", "Сент-Китс и Невис", "Сент-Люсия", "Сербия", "Сингапур", "Сирия", "Словакия", "Словения", "Соломоновы Острова", "Сомали", "Судан", "Суринам", "США", "Сьерра-Леоне", "Таджикистан", "Таиланд", "Танзания", "Того", "Тонга", "Тринидад и Тобаго", "Тувалу", "Тунис", "Туркменистан", "Турция", "Уганда", "Узбекистан", "Украина", "Уругвай", "Фиджи", "Филиппины", "Финляндия", "Франция", "Хорватия", "ЦАР", "Чад", "Черногория", "Чехия", "Чили", "Швейцария", "Швеция", "Шри-Ланка", "Эквадор", "Экваториальная Гвинея", "Эритрея", "Эсватини", "Эстония", "Эфиопия", "ЮАР", "Южная Корея", "Южный Судан", "Ямайка", "Япония"
+        ];
+
+        const select = document.getElementById('userCountry');
+        countryList.forEach(country => {
+            const opt = document.createElement('option');
+            opt.value = country; opt.innerText = country;
+            select.appendChild(opt);
         });
-    }
-}
 
-// --- СЦЕНА ВЫБОРА СТРАНЫ ---
-class Choice extends Phaser.Scene {
-    constructor() { super('Choice'); }
-    create() {
-        this.add.image(180, 320, 'map_bg').setAlpha(0.4);
-        const t = this.game.config.t;
-        this.add.text(180, 80, t.choose_title, { fontSize: '28px', color: '#fff', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5);
-
-        for(let i=0; i<3; i++) {
-            let btn = this.add.sprite(180, 220 + i*130, 'icons', i).setInteractive().setScale(0.6);
-            btn.on('pointerdown', () => { State.country = i; save(); this.scene.start('News'); });
-        }
-    }
-}
-
-// --- СЦЕНА ГАЗЕТЫ (НОВОСТИ) ---
-class News extends Phaser.Scene {
-    constructor() { super('News'); }
-    create() {
-        this.add.rectangle(180, 320, 360, 640, 0xfdf5e6);
-        const t = this.game.config.t;
-        this.add.image(180, 450, 'ara_news').setScale(0.7);
-        this.add.text(180, 80, t.news_title, { color: '#b22', fontSize: '32px', fontWeight: 'bold' }).setOrigin(0.5);
-        this.add.text(180, 180, t.headline, { color: '#000', fontSize: '18px', align: 'center', wordWrap: {width: 300} }).setOrigin(0.5);
+        const music = document.getElementById('bgMusic');
         
-        let btn = this.add.image(180, 580, 'btn_green').setInteractive();
-        this.add.text(180, 580, t.btn_play, { color: '#fff' }).setOrigin(0.5);
-        btn.on('pointerdown', () => this.scene.start('Game'));
-    }
-}
+        const dialogues = [
+            "Привет, Капитан! Я Ара, твой помощник!",
+            "Твой остров выглядит заброшенным...",
+            "Давай наведем порядок! Жми на Сад, чтобы начать."
+        ];
+        let currentDialogue = 0;
 
-// --- ОСНОВНОЙ ГЕЙМПЛЕЙ (МЕРДЖ) ---
-class Game extends Phaser.Scene {
-    constructor() { super('Game'); }
-    create() {
-        this.add.image(180, 320, 'level_bg');
-        this.items = this.physics.add.group();
-        this.canShoot = true;
-        const t = this.game.config.t;
+        window.addEventListener('load', () => {
+            setTimeout(() => showScreen('splash'), 1500);
+        });
 
-        // Показ текущего персонажа
-        const chars = ['mark', 'lila', 'ara'];
-        this.add.image(60, 100, chars[State.level]).setScale(0.25).setAlpha(0.8);
-        
-        this.questTxt = this.add.text(180, 40, t.quest_title + " ???", { backgroundColor: '#000', padding: 5 }).setOrigin(0.5);
-        this.spawn();
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
 
-        this.physics.add.collider(this.items, this.items, this.onMerge, null, this);
-        this.input.on('pointerdown', () => this.fire());
-        
-        // Линия проигрыша
-        this.add.rectangle(180, 520, 360, 2, 0xff0000);
-    }
+            if(id === 'splash') {
+                setTimeout(() => showScreen('letter-screen'), 2000);
+            }
 
-    spawn() {
-        this.nextType = Phaser.Math.Between(0, 1);
-        this.preview = this.add.sprite(180, 580, `items${State.level}`, this.nextType).setScale(0.35);
-        this.canShoot = true;
-    }
-
-    fire() {
-        if (!this.canShoot) return;
-        this.canShoot = false;
-        let b = this.physics.add.sprite(this.preview.x, this.preview.y, `items${State.level}`, this.nextType).setScale(0.35);
-        b.type = this.nextType;
-        b.setVelocityY(-650);
-        b.setCircle(100);
-        this.time.delayedCall(800, () => { if(b.active){ b.setVelocity(0); this.items.add(b); this.spawn(); }});
-    }
-
-    onMerge(a, b) {
-        if (a.type === b.type && a.type < 4) {
-            let nt = a.type + 1;
-            let nx = (a.x + b.x)/2, ny = (a.y + b.y)/2;
-            a.destroy(); b.destroy();
-            let n = this.physics.add.sprite(nx, ny, `items${State.level}`, nt).setScale(0.35 + nt*0.05);
-            n.type = nt; n.setImmovable(true);
-            this.items.add(n);
-            
-            if(nt === 4) {
-                alert(this.game.config.t.win_msg);
-                State.level = (State.level + 1) % 3;
-                save();
-                this.scene.start('News');
+            if(id === 'map-screen') {
+                setTimeout(() => {
+                    document.getElementById('parrot-ui').style.display = 'flex';
+                }, 500);
             }
         }
-    }
 
-    update() {
-        if (this.canShoot && this.preview) this.preview.x = Phaser.Math.Clamp(this.input.x, 50, 310);
-        this.items.children.iterate(it => {
-            if(it && it.y > 520 && it.body.velocity.y === 0) this.scene.restart();
-        });
-    }
-}
+        function startJourney() {
+            music.play().catch(e => console.log("Музыка ждет взаимодействия"));
+            showScreen('map-screen');
+        }
 
-// --- КОНФИГУРАЦИЯ ЗАПУСКА ---
-const config = {
-    type: Phaser.AUTO,
-    width: 360,
-    height: 640,
-    parent: 'game-container',
-    physics: { default: 'arcade' },
-    scene: [Boot, Login, Choice, News, Game]
-};
-new Phaser.Game(config);
-</script>
+        function nextDialogue() {
+            currentDialogue++;
+            if (currentDialogue < dialogues.length) {
+                document.getElementById('parrot-phrase').innerText = dialogues[currentDialogue];
+            } else {
+                document.getElementById('parrot-ui').style.display = 'none'; 
+                const garden = document.getElementById('garden-entry');
+                garden.style.display = 'block';
+                garden.classList.add('blink');
+                document.getElementById('finger-pointer').style.display = 'block'; 
+            }
+        }
+
+        function goToGame() { 
+            window.location.href = 'game.html'; 
+        }
+
+        function validate() {
+            const p = document.getElementById('pName').value;
+            const r = document.getElementById('rName').value;
+            const c = document.getElementById('userCountry').value;
+            document.getElementById('start-btn').disabled = !(p && r && c);
+        }
+
+        const tips = ["Наводим блеск...", "Готовим коктейли...", "Чистим песок..."];
+        setInterval(() => {
+            const el = document.getElementById('random-tip');
+            if(el) el.innerText = tips[Math.floor(Math.random()*tips.length)];
+        }, 1500);
+    </script>
 </body>
 </html>
